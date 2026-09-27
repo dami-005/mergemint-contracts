@@ -54,6 +54,9 @@ pub struct Dispute {
     pub bounty_id: u64,
     pub submission_id: u64,
     pub raised_by: Address,
+    /// Short, human-readable reason supplied when the dispute was raised.
+    /// Required and must be non-empty so the arbitrator has an on-chain
+    /// record tying the dispute to its cause.
     pub reason: String,
     pub resolved: bool,
     pub resolution: Option<Resolution>,
