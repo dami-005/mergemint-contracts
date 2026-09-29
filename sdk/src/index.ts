@@ -43,6 +43,12 @@ export const MAINNET: Omit<NetworkConfig, "contractId"> = {
 };
 
 /**
+ * Maximum number of bounty ids a single `getBountiesByCreator` page may return.
+ * Mirrors the contract-side cap so clients can validate before submitting a read.
+ */
+export const MAX_BOUNTIES_BY_CREATOR_LIMIT = 50;
+
+/**
  * Builds a full `NetworkConfig` by combining a base template (e.g. `TESTNET` or `MAINNET`)
  * with a specific `contractId` and optional overrides.
  */
@@ -282,15 +288,15 @@ export class MergeMintSDK {
    * RPC transport fails on every attempt allowed by the configured retry policy.
    */
   async getBounty(bountyId: string): Promise<Bounty | null> {
-    const result = await this.simulateReadCall("get_bounty", [
-      hexToBytesN(bountyId),
-    ]);
-    if (!result) return null;
-    return parseBounty(scValToNative(result));
+    const result = await this.simulateRead("get_bounty", [hexToBytesN(bountyId)]);
+    if (result === null || result === undefined) {
+      return null;
+    }
+    return parseBounty(result);
   }
 
   /**
-   * Reads the off-chain-facing title and description stored for a bounty.
+   * Reads a page of bounty ids created by `creator`.
    *
    * @param bountyId - Bounty id as a hex-encoded `BytesN<32>` string.
    * @returns The {@link BountyMeta}, or `null` when the contract account is
@@ -317,9 +323,27 @@ export class MergeMintSDK {
    * or if the RPC transport fails on every attempt allowed by the configured retry
    * policy.
    */
-  async getContributor(address: string): Promise<Contributor | null> {
-    const result = await this.simulateReadCall("get_contributor", [
-      addressToScVal(address),
+  async getBountiesByCreator(
+    creator: string,
+    offset: number = 0,
+    limit: number = MAX_BOUNTIES_BY_CREATOR_LIMIT
+  ): Promise<string[]> {
+    if (!Number.isInteger(offset) || offset < 0) {
+      throw new MergeMintSdkError(
+        `Invalid offset: expected an integer >= 0, got ${offset}`,
+        "INVALID_ARGUMENT"
+      );
+    }
+    if (!Number.isInteger(limit) || limit < 1 || limit > MAX_BOUNTIES_BY_CREATOR_LIMIT) {
+      throw new MergeMintSdkError(
+        `Invalid limit: expected an integer in [1, ${MAX_BOUNTIES_BY_CREATOR_LIMIT}], got ${limit}`,
+        "INVALID_ARGUMENT"
+      );
+    }
+    const result = await this.simulateRead("get_bounties_by_creator", [
+      addressToScVal(creator),
+      u32ToScVal(offset),
+      u32ToScVal(limit),
     ]);
     if (!result) return null;
     return parseContributor(scValToNative(result));
@@ -340,7 +364,7 @@ export class MergeMintSDK {
   }
 
   /**
-   * Reads the ids of every bounty currently in the `open` state.
+   * Counts the total number of bounties created by `creator`.
    *
    * @returns Bounty ids as hex-encoded strings; an empty array when the contract
    * account is unreachable or the simulation errors.
@@ -710,20 +734,16 @@ export class MergeMintSDK {
     throw lastError;
   }
 
-  private async simulateReadCall(
-    method: string,
-    args: xdr.ScVal[]
-  ): Promise<xdr.ScVal | null> {
-    const account = await this.withRetry(() =>
-      this.rpc.getAccount(this.contractId)
-    ).catch(() => null);
-    if (!account) return null;
+  // === Internal helpers
 
+  private async simulateRead(method: string, args: xdr.ScVal[]): Promise<unknown> {
+    const operation = this.contract.call(method, ...args);
+    const account = await this.rpc.getAccount(this.contractId);
     const tx = new TransactionBuilder(account, {
       fee: BASE_FEE,
       networkPassphrase: this.networkPassphrase,
     })
-      .addOperation(this.contract.call(method, ...args))
+      .addOperation(operation)
       .setTimeout(30)
       .build();
 
@@ -783,5 +803,3 @@ export class MergeMintSDK {
     return prepared.toXDR();
   }
 }
-
-export { bytesNToHex };

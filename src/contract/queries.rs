@@ -4,6 +4,13 @@
 /// needs to read more than two storage pages.
 const MAX_LIMIT: u32 = 50;
 
+/// The deployed contract version, as a semver string.
+///
+/// This is the single source of truth for the contract version. Bump it here
+/// (and keep `docs/versioning.md` in sync) whenever behavior changes between
+/// releases so clients can detect mismatches via `version()`.
+const CONTRACT_VERSION: &str = "1.0.0";
+
 /// Resolve a `cursor` + `limit` window into a flat slice of IDs.
 ///
 /// `all_ids` is the full ordered list (collected across pages when needed).
@@ -46,6 +53,15 @@ fn paginate(
 
 #[contractimpl]
 impl MergeMintContract {
+    /// Return the deployed contract version as a semver string.
+    ///
+    /// Sourced from the single `CONTRACT_VERSION` constant so the value stays
+    /// in sync with `docs/versioning.md`. Cheap to call; lets the frontend,
+    /// SDK and indexer warn when pointed at an unexpected contract version.
+    pub fn version(env: Env) -> Symbol {
+        Symbol::new(&env, CONTRACT_VERSION)
+    }
+
     /// Return a single bounty by its ID, or `None` if it does not exist.
     pub fn get_bounty(env: Env, bounty_id: BountyId) -> Option<Bounty> {
         // Never-allocated IDs (sequence >= count) and pruned entries (sequence
