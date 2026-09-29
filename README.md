@@ -153,8 +153,5 @@ contract, read [docs/security.md](docs/security.md) first.
 
 ## Handsoff notes
 
-<!-- handsoff-issue-847 -->
-- #847: [Contract] Add storage TTL extension helper
-
-<!-- handsoff-issue-848 -->
-- #848: [Contract] Partial refund on cancel with milestones
+<!-- handsoff-issue-869 -->
+- #869: [Backend] Request ID middleware

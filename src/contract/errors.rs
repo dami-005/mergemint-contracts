@@ -1,24 +1,31 @@
 use soroban_sdk::contracterror;
 
-/// Errors returned by the escrow contract.
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum ContractError {
-    /// The caller is not authorized to perform this action.
-    Unauthorized = 1,
-    /// The escrow has already been funded.
-    AlreadyFunded = 2,
-    /// The escrow has not been funded yet.
-    NotFunded = 3,
-    /// The escrow has already been resolved.
-    AlreadyResolved = 4,
-    /// The provided amount is invalid.
-    InvalidAmount = 5,
-    /// The provided resolution is invalid.
-    InvalidResolution = 6,
-    /// The dispute has not been raised.
-    NoDispute = 7,
-    /// The escrow is not in a state that allows this action.
-    InvalidState = 8,
+    AlreadyInitialized = 1,
+    NotInitialized = 2,
+    Unauthorized = 3,
+    BountyNotFound = 4,
+    BountyNotOpen = 5,
+    BountyNotInProgress = 6,
+    BountyNotCompleted = 7,
+    BountyAlreadyCompleted = 8,
+    InvalidDeadline = 9,
+    InvalidApprovalThreshold = 10,
+    ApprovalThresholdExceedsVerifiers = 11,
+    VerifierCannotBeAssignee = 12,
+    VerifierAlreadyExists = 13,
+    VerifierNotFound = 14,
+    AssigneeNotFound = 15,
+    SubmissionNotFound = 16,
+    AlreadyApproved = 17,
+    NotAVerifier = 18,
+    InsufficientApprovals = 19,
+    InvalidAmount = 20,
+    InsufficientFunds = 21,
+    TransferFailed = 22,
+    InvalidFeeRecipient = 23,
+    FeeExceedsMaximum = 24,
 }
